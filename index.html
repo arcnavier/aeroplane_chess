@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" 
+  content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <script></script>
 
@@ -15,28 +16,64 @@
             -ms-user-select: none;
             user-select: none;
         }
+
+        @keyframes pbar-animation {
+            from {
+                width: 0%;
+            }
+            to {
+                width: 100%;
+            }
+        }
+        .pbar {
+            height: 10px;
+            background-color: rgb(0, 153, 255);
+            animation-name: pbar-animation;
+            animation-duration: 0.5s;
+            animation-timing-function: linear;
+        }
+
+
         .my-col {
             height: 100%;
             text-align: center;
             color: white;
-            font-size: 150px;
+
         }
 
         .my-num {
-            width: 100%;
+            font-size: 250px;
+            border-width: 10px;
+            border-style: solid;
         }
+        .hist {
+            font-size: 100px;
+        }
+        .star {
+            font-size: 60px;
+        }
+        
 
         .jackpot {
             background-color: red;
         }
+
+        #left {
+            background-color: green;
+        }
+        #right {
+            background-color: orange;
+        }
     </style>
 </head>
 <body>
-
+    <div class="pbar-wrapper">
+        <div class="pbar"></div>
+    </div>
     <div class="container">
         <div class="row center">
-            <div class="col my-col" id="left" style="background-color: green"></div>
-            <div class="col my-col" id="right" style="background-color: orange"></div>
+            <div class="col my-col" id="left"></div>
+            <div class="col my-col" id="right"></div>
         </div>
     </div>
 
@@ -44,39 +81,98 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 
     <script>
-        var side = true;
+        const ROLL_MAX = 6;
+        const DELAY = 500;
+        const HIST_ROW_LENGTH = 3;
+        const PLAYERS = 2;
 
-        var roll_rand = function() {
-            var select = side ? $('#left') : $('#right');
-            var other = !side ? $('#left') : $('#right');
+        var delay = Date.now();
+        var elem = [$('#left'), $('#right')];
+        var hist = [];
+        var lastRoll = 0;
 
-            other.empty();
+        var bordercolors = ['black', 'navy', 'blue', 'blue', 'purple', 'red'];
+        var bgcolors = ['green', 'orange'];
+        var colors = ['white', 'white', 'white', 'white', 'white', 'white'];
+        
 
-            var n = Math.floor(Math.random() * 6 + 1);
+        function roll_render() {
+            var select = elem[(hist.length - 1) % 2];
 
-            var elem = $('<div>');
-            elem.addClass('my-num');
-            elem.html(n);
-            if (n == 6) {
-                elem.addClass('jackpot');
+            // Clear other elements
+            for (var i = 0; i < elem.length; i++) {
+                elem[i].empty();
             }
 
-            select.append(elem);
-            return n;
+            var row;
+            hist[0].forEach(function(v, k, a) {
+                if ((k - 1) % HIST_ROW_LENGTH == 0 || k == 0) {
+                    row = $('<div class="row center">');
+                    select.append(row);
+                }
 
-            
-        };
+                var e = $('<div>');
+                e.html(v);
 
-        var roll_start = function() { }
+                // if index is 0 (first element)
+                if (k == 0) {
+                    e.addClass('col');
+                    e.addClass('my-num');
+                    e.css('border-color', bordercolors[v - 1]);
+                    e.css('color', colors[v - 1]);
 
-        var roll_end = function() {
-            if (roll_rand() != 6) {
-                side = !side;
-            }
+                    var starsRow = $('<div class="row center">');
+                    starsRow.css('background-color', bgcolors[v - 1]);
+
+                    var stars = $('<div class="col">');
+                    stars.addClass('star');
+                    stars.html('★'.repeat(v));
+
+                    select.append(starsRow);
+                    starsRow.append(stars);
+                } else {
+                    e.addClass('col-4');
+                    e.addClass('hist');
+                }
+                row.append(e);
+            });
         }
 
-        $(document).on('touchstart', roll_start);
-        $(document).on('touchend', roll_end);
+
+        function roll_rand() {
+            var n = Math.floor(Math.random() * ROLL_MAX + 1);
+            if (lastRoll != ROLL_MAX) {
+                hist.unshift([]);
+            }
+            hist[0].unshift(n);
+
+            lastRoll = n;
+            return n;
+        };
+
+        var roll_end = function(event) {
+            if (event.targetTouches.length > 1) {
+                return;
+            }
+            if (Date.now() - delay < DELAY) {
+                // delay = Date.now();
+                return;
+            }
+            delay = Date.now();
+            roll_rand();
+            roll_render();
+
+            $('.pbar-wrapper').empty().append(
+                $('<div class="pbar">')
+            );
+        }
+
+        document.body.addEventListener('touchmove', function(event) {
+            event.preventDefault();
+        }, false);
+        $(document).on('touchstart', roll_end);
+
+
     </script>
     
 </body>
